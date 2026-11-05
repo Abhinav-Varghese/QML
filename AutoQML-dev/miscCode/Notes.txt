@@ -1,0 +1,67 @@
+There are lots of circuits - don't need to replicate all
+Basically just ML training using tensorflow, but at research level clarity.
+The quantum circuits feature trainable parameters, so these are variational algorithms.
+Don't need all the HPC / GPU stuff yet.
+Don't necessarily need all the confusing hydra bits.
+
+Have used helpful components from yaml.
+
+Pennylane is just for plotting, sf and tf for rest.
+
+
+ToDo:
+- Fix encoding
+- Fix/sort print variable values
+- Implement model saving
+- Training data should save every X epoch functionality? For speed?
+- Is data file order an issue? Will it worsen training?
+- There is an issue with scale=True in config, it turns all the data in the batches to 0/1? (or is it just scale/rounding?)
+- Think about how to get data out. Don't want to just measure one mode, perhaps pass all 3 through NN? to combine to 1?
+- Ensure comments on each func / class
+- Have check on inputs in .yaml, e.g nowires = nofeats
+- Clean up active_wires calculation, happens multiple times
+- Fock cutoff needs to be done by formula to be accurate
+
+Done:
+- Try supervised learning using IRIS test dataset
+- Implement training plots
+- Check that data/labels match - I printed fpath as data loaded, found first data file visited, then printed out first batch of data+labels. 
+  They match exactly when viewed in VScode, with shuffle and scale turned off! Same feature data + top or qcd label! Also, the datasets are correctly
+  cut down to only the jets defined as signal or background, cool!
+- Added data fraction feature globally so takes a small amount of each file/data
+- Load actual classification data
+- Implement batching
+- Z scaling (not min max) - Tom
+- Add supervised circuit / make autoencoder unsupervised
+- Loss for autoencoder should be based on input = output similarity + trash modes 0 photons?
+- Make createVars specific to gate, cubic phase only needs gamma etc (non-gaussian can't be trained tho!)
+
+HLS4ML (150) dataset notes:
+- "jetConstituentList" - Gives description of each particle (up to 150) per jet/event. Each particle corresponds with "particleFeatureNames".
+- "jets" - Gives description of features in a jet, corresponds with "jetFeatureNames".
+Would use jetConstituentList and particleFeatureNames but not sure how to pass up to 150 multiple particles at same time (150 wires?)
+Will instead use jets, and pick 4/5 feautres of jet
+
+Data is only 3Gb, so might as well just load all into memory!? None of this clever batched stuff 
+
+How to implement a SWAP gate for the autoencoder, swap in vacuum modes?
+
+Paper: https://journals.aps.org/prd/abstract/10.1103/PhysRevD.105.095004
+
+
+######## Quantum autoencoder (Anomaly detection in high-energy physics using a quantum autoencoder)
+- For normal, classical autoencoders, we train with data x and the output is x'. Our loss function compares x and x', and we aim to minimise their difference, ideally
+x=x', even after passing through the latent space. We only train with background data, such that when we pass an anomaly (signal) through, x and x' are vastly different,
+and we identify this as a signal.
+- The classical loss function only considers reconstruction error, as their compression/latent space occurs naturally.
+- In the quantum world, our loss function depends. If we keep the "trash wires", our loss should include a measure of them going to 0. If we SWAP out the trash wires, and 
+replace them with fresh wires, then we don't need to include another term in the loss, as the trashing would then actually occur.
+- Quantum autoencoders have the benefit that we only need to consider the encoding part, and train the trash state fidelity. As operations are unitary,
+the decoder doesn't need to be trained, as if you can compress all info into the latent space, then the inverse unitary would uncompress it perfectly too. So the only
+aim is to get a trash space fidelity of 1 with 0/reference/vacuum.
+- So either we only train the encoder, and loss=trash fidelity. Or we form the full circuit, replace the trash wires and loss=reconstruction error.
+- The autoencoders are trained to compress useful info, for background data. Any anomalies/signals may not have the same "useful info", and so the circuit Will
+reconstruct them poorly.
+- Simon thinks both would be interesting, but we can start with just the encoder training. Therefore, we just want to entangle info, then measure fidelity, no trashing needed.
+
+benefits of classical is that all mix, whereas quanutm, more specific lines drop out

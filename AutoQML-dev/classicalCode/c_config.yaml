@@ -1,0 +1,33 @@
+misc:
+  random_seed: 0
+  folder_tag: "C"                             # Additional folder name tag (can leave blank)
+  scan_id: null
+  scan_index: null
+  scan_keys: null
+  scan_params: {}
+
+circuit:
+  # Remember that 1 consituent has 3 features (eta, pt, phi), so 1 quantum wire = 3 neurons
+  # Unsupervised - [4,2,1] becomes [4,2,1,2,4] autoencoder
+  # Supervised - [4,3,3] becomes [4,3,3]+1 circuit, additional single output neuron added
+  encoder_shape: [24,20,16,8,2] #[30,8,1] #[24,32,24,8,2] #[24,2] #[18,36,36,36]                   
+  activation: "LeakyReLU"
+  
+training:
+  init_weights: ["Kaiming"]                   # Options: ["Normal", mean, std], ["Uniform",lower,upper]  or ["Kaiming"]
+  epochs: 400                                 # Maximum cutoff
+  lr_start: 1e-3                              # Starting LR
+  lr_patience: 5                              # Number of non-improving validation's before reducing LR via scheduler (no.epochs = lr_patience x val_every)
+  es_patience: 15                             # Number of non-improving validation's before early stopping (no.epochs = es_patience x val_every)
+  min_delta: 0.0001                          # Minimum validation improvement required
+  val_every: 2                                # Validate every X epochs
+  lr_scheduling: True 
+  batch_size: 256
+  paradigm: "unsupervised"                    # Unsupervised uses MSE reconstruction loss, supervised uses BCEWLL on final output
+  opt_weight_decay: 0.0                       # Optimiser weight decay
+         
+data:
+  train_num_samples: 10000          # 115k bg - val - test/2 - 876bg  ~ 99k     230k both - val - test - 876bg ~ 208k
+  val_num_samples: 10000
+  test_num_samples: 10000
+  save_path: null                             # Set in config.py to avoid hardcoding

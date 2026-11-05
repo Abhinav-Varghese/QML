@@ -1,0 +1,34 @@
+misc:
+  random_seed: 0
+  folder_tag: "QB"                             # Additional folder name tag (can leave blank)
+  scan_id: null
+  scan_index: null
+  scan_keys: null
+  scan_params: {}
+
+circuit:
+  constituents: 8
+  qubits: 5                                   # amplitude encoding. MUST HAVE: 2^n >= constituents * 3
+  trash: [1,2,3,4]                 # trash should be MOST of qubits
+  entangling_substrate: "ring"    # all, ring
+  measurement: "vacProb"         # SWAP or vacProb
+  layer_structure: ["ent","lg","ent"]
+
+training:
+  epochs: 400                                 # Maximum cutoff
+  lr_start: 2e-2                              # Starting LR
+  lr_patience: 5                              # Number of non-improving validation's before reducing LR via scheduler (no.epochs = lr_patience x val_every)
+  es_patience: 15                             # Number of non-improving validation's before early stopping (no.epochs = es_patience x val_every)
+  min_delta: 0.001                            # Minimum validation improvement required
+  val_every: 2                                # Validate every X epochs
+  lr_scheduling: True 
+  batch_size: 256             
+  paradigm: "unsupervised"                    # Unsupervised only!!!
+  opt_weight_decay: 0.0                       # Optimiser weight decay 
+
+data:
+  train_num_samples: 10000          # 115k bg - val - test/2 - 876bg  ~ 99k     230k both - val - test - 876bg ~ 208k
+  val_num_samples: 10000
+  test_num_samples: 10000
+  save_path: null                             # Set in config.py to avoid hardcoding
+  pt_mult: 1 #0.5
