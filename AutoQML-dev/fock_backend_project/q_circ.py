@@ -17,11 +17,42 @@ n_wires = CONFIG.circuit.wires
 dev = qml.device('strawberryfields.fock', wires=n_wires, cutoff_dim=4)
 
 def cartesian_to_polar(real, imag):
+    """
+    Converts Cartesian coordinates (real, imaginary) to polar coordinates (r, phi).
+    
+    This is required because the custom parameter initialization uses Cartesian 
+    coordinates to avoid autograd singularities at zero, but PennyLane's 
+    continuous-variable operations require polar inputs.
+    
+    Args:
+        real (torch.Tensor or float): The real component.
+        imag (torch.Tensor or float): The imaginary component.
+        
+    Returns:
+        tuple: (r, phi) where r is the magnitude and phi is the phase angle.
+    """
     r = torch.sqrt(real**2 + imag**2)
     phi = torch.atan2(imag, real)
     return r, phi
 
 def pennylane_encoding(x, cfg, params, reupload_layer=None):
+    """
+    Encodes the classical input features into the quantum continuous-variable state.
+    
+    In unsupervised mode, features are encoded directly into the displacement 
+    and squeezing operations. In supervised mode, trainable weights are applied 
+    to the features before encoding, allowing the network to learn the optimal embedding.
+    
+    Args:
+        x (torch.Tensor): A single sample of input features with shape (n_wires, 3).
+                          The 3 features are (eta, pt_frac, phi).
+        cfg (OmegaConf): The configuration object containing circuit details.
+        params (dict): Dictionary of trainable parameters.
+        reupload_layer (int, optional): The current re-upload layer index for supervised mode.
+    """
+    if not torch.is_tensor(x):
+        x = torch.as_tensor(x, dtype=torch.float64)
+        
     n_wires = cfg.circuit.wires
     
     if cfg.training.paradigm == "unsupervised":
@@ -54,6 +85,14 @@ def pennylane_encoding(x, cfg, params, reupload_layer=None):
             qml.Squeezing(s_r, s_phi, wires=wire)
 
 def pennylane_bs_substrate(params, pairs, bs_set_index):
+    """
+    Applies a layer of Beamsplitter gates to entangle pairs of qumodes.
+    
+    Args:
+        params (dict): Dictionary of trainable parameters containing 'bs_theta' and 'bs_phi'.
+        pairs (list of tuples): List of (wire1, wire2) indices specifying which modes to entangle.
+        bs_set_index (int): The index of the current beamsplitter layer.
+    """
     k = 0
     for w1, w2 in pairs:
         theta = params["bs_theta"][bs_set_index, k]
@@ -62,6 +101,16 @@ def pennylane_bs_substrate(params, pairs, bs_set_index):
         k += 1
 
 def pennylane_lg_substrate(params, n_wires, lg_set_index, lg_type):
+    """
+    Applies local single-mode gates (Displacement, Squeezing, or Rotation) to all qumodes.
+    
+    Args:
+        params (dict): Dictionary of trainable parameters for the local gates.
+        n_wires (int): Total number of qumodes in the circuit.
+        lg_set_index (int): The index of the current local gate layer.
+        lg_type (str): String indicating which gates to apply (e.g., 'd' for displacement, 
+                       's' for squeezing, 'r' for rotation).
+    """
     if lg_type == "none" or lg_type is None:
         return
         
@@ -84,6 +133,14 @@ def pennylane_lg_substrate(params, n_wires, lg_set_index, lg_type):
                 qml.Rotation(phi_scalar, wires=w)
 
 def pennylane_cx_substrate(params, pairs, cx_set_index):
+    """
+    Applies a layer of Continuous-Variable Controlled-X (CX) gates to pairs of qumodes.
+    
+    Args:
+        params (dict): Dictionary of trainable parameters containing 'cx_s'.
+        pairs (list of tuples): List of (wire1, wire2) indices specifying the control/target modes.
+        cx_set_index (int): The index of the current CX layer.
+    """
     k = 0
     for w1, w2 in pairs:
         s = params["cx_s"][cx_set_index, k]
@@ -92,6 +149,21 @@ def pennylane_cx_substrate(params, pairs, cx_set_index):
 
 @qml.qnode(dev, interface="torch")
 def qae_qnode(x_single, cfg, params, pairs):
+    """
+    Constructs and executes the Quantum Autoencoder (QAE) circuit for a single sample.
+    
+    The autoencoder compresses the encoded data by attempting to return a subset 
+    of modes (the 'trash modes') to the vacuum state.
+    
+    Args:
+        x_single (torch.Tensor): A single input sample.
+        cfg (OmegaConf): Configuration settings.
+        params (dict): Trainable parameters.
+        pairs (list of tuples): Architecture pairs for entangling gates.
+        
+    Returns:
+        tuple: (trash_mode_probabilities, expected_photon_counts_all_modes)
+    """
     pennylane_encoding(x_single, cfg, params)
     
     bs_idx, lg_idx, cx_idx = 0, 0, 0
@@ -115,6 +187,22 @@ def qae_qnode(x_single, cfg, params, pairs):
 
 @qml.qnode(dev, interface="torch")
 def cvvc_qnode(x_single, cfg, params, pairs):
+    """
+    Constructs and executes the Continuous-Variable Variational Classifier (CVVC) 
+    circuit for a single sample.
+    
+    This architecture allows for data re-uploading, embedding the classical data 
+    repeatedly between trainable layers to increase expressivity.
+    
+    Args:
+        x_single (torch.Tensor): A single input sample.
+        cfg (OmegaConf): Configuration settings.
+        params (dict): Trainable parameters.
+        pairs (list of tuples): Architecture pairs for entangling gates.
+        
+    Returns:
+        tuple: (all_mode_probabilities, expected_photon_counts_all_modes)
+    """
     n_wires = cfg.circuit.wires
     pennylane_encoding(x_single, cfg, params, reupload_layer=0)
     
@@ -138,6 +226,22 @@ def cvvc_qnode(x_single, cfg, params, pairs):
     )
 
 def QAE_loss(cfg, x_batch, params, pairs):
+    """
+    Calculates the autoencoder loss across a batch of samples.
+    
+    Loops over the QAE QNode sequentially for each sample. The fidelity (F) is 
+    defined as the probability of measuring the vacuum state (|00...0>) in the 
+    trash modes, which is found at index 0 of the returned probabilities.
+    
+    Args:
+        cfg (OmegaConf): Configuration settings.
+        x_batch (torch.Tensor): Batch of input data.
+        params (dict): Trainable parameters.
+        pairs (list of tuples): Connectivity pairs.
+        
+    Returns:
+        tuple: (loss_tensor, fidelity_tensor, photon_number_tensor)
+    """
     B = x_batch.shape[0]
     batch_F = []
     batch_n = []
@@ -160,6 +264,23 @@ def QAE_loss(cfg, x_batch, params, pairs):
         return -logF_tensor / len(cfg.circuit.trash_modes), F_tensor, n_tensor
 
 def CVVC_loss(cfg, x_batch, params, pairs):
+    """
+    Calculates the classifier loss across a batch of samples.
+    
+    Loops over the CVVC QNode sequentially. Translates the fidelity (overlap 
+    with the target state) into a logit score which is then shifted and scaled 
+    using the trainable 'sup_logloss_scale' and 'shift' parameters before being 
+    passed to the PyTorch BCELoss function in the main training loop.
+    
+    Args:
+        cfg (OmegaConf): Configuration settings.
+        x_batch (torch.Tensor): Batch of input data.
+        params (dict): Trainable parameters.
+        pairs (list of tuples): Connectivity pairs.
+        
+    Returns:
+        tuple: (logits_tensor, photon_number_tensor)
+    """
     B = x_batch.shape[0]
     batch_F = []
     batch_n = []
@@ -188,6 +309,19 @@ def CVVC_loss(cfg, x_batch, params, pairs):
 # ============================================================
 
 def make_params(cfg, rngs):
+    """
+    Initializes all trainable parameters and network connectivity based on the config.
+    
+    Determines parameter shapes based on the number of wires, layers, and the 
+    specified architectural topology (ring, star, chain, etc.). 
+    
+    Args:
+        cfg (OmegaConf): Configuration settings.
+        rngs (dict): Dictionary of random number generators for reproducible initialization.
+        
+    Returns:
+        tuple: (params_dict, connectivity_pairs_list)
+    """
     params = {}
     pairs = []
     gen = rngs["circuit"]
@@ -277,6 +411,9 @@ def make_params(cfg, rngs):
     return params, pairs
 
 def resolve_pairs(arch):
+    """
+    Parses the architecture string from the configuration to determine the topology.
+    """
     if "ring" in arch:
         return "ring"
     if "chain" in arch:
@@ -288,6 +425,9 @@ def resolve_pairs(arch):
     raise ValueError(f"Unknown circuit arch: {arch}")
 
 def bs_int_pairs(n):
+    """
+    Generates index pairs for a standard alternating brick-wall interferometer layout.
+    """
     pairs = []
     for layer in range(n):
         start = 0 if (layer % 2 == 0) else 1
@@ -295,5 +435,8 @@ def bs_int_pairs(n):
     return pairs
 
 def get_op_log(cfg, params, pairs):
-    # Stub to prevent plotter crashes since backend changed
+    """
+    Stubbed function to prevent runtime errors in auxiliary plotting scripts 
+    that were expecting internal operation logs from the custom backend.
+    """
     return []
