@@ -5,7 +5,7 @@ import math
 from pathlib import Path
 _root = Path(__file__).parent.parent  # Setting root
 sys.path.append(str(_root / "jointCode"))
-sys.path.append(str(_root / "quantumCode"))
+sys.path.append(str(_root / "fock_backend")) 
 torch.set_default_dtype(torch.float64)
 
 import pennylane as qml
@@ -14,7 +14,8 @@ from q_params import init_param
 
 # Initialize device dynamically based on config
 n_wires = CONFIG.circuit.wires
-dev = qml.device('strawberryfields.fock', wires=n_wires, cutoff_dim=4)
+cutoff = CONFIG.circuit.cutoff_dim
+dev = qml.device('strawberryfields.fock', wires=n_wires, cutoff_dim= cutoff)
 
 def cartesian_to_polar(real, imag):
     """

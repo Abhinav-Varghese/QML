@@ -8,6 +8,7 @@ misc:
 
 circuit:
   wires: 4                                    # Reduced from 8 to 4 for memory scaling
+  cutoff_dim: 6                               #Trunctated at 6 for memory
   bs_substrate_type: "trainable_ring"          # Options: trainable_ + (ring, star, chain, alltoall, int)
   lg_substrate_type: drs                       # Options: null, d, s, r...one letter max of each, any order, any combination
   layers: 1                                   # Layers of BS substrate + local gate
