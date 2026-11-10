@@ -254,13 +254,16 @@ class Trainer:
                 # Physical Constraint: clamp parameters (like squeezing) to prevent infinite photons/NaNs
                 clamp_params(params)
 
+                # During the batch loop (inside train_CVVC)
                 with torch.no_grad():
-                    loss_sum += loss.item() * len(x_batch)
-                    n_sum += n.mean().item() * len(x_batch) 
+                    # Multiply the mean batch loss by the batch size to get the sum
+                    all_batch_losses.append(loss.item() * len(x_batch))
+                    all_batch_n_means.append(n.mean().item() * len(x_batch))
                     epoch_n_max = max(epoch_n_max, n.max().item())
 
-            epoch_loss = loss_sum / len(X_train)
-            epoch_n_mean = n_sum / len(X_train)
+                # After the batch loop finishes
+                epoch_loss = sum(all_batch_losses) / len(X_train)
+                epoch_n_mean = sum(all_batch_n_means) / len(X_train)
 
             # Validation step occurs only every 'val_every' epochs
             if epoch % self.cfg.training.val_every == 0:

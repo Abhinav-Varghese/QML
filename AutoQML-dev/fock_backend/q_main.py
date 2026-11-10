@@ -14,7 +14,7 @@ from pathlib import Path
 
 _root = Path(__file__).parent.parent  # Setting root
 sys.path.append(str(_root / "jointCode"))
-sys.path.append(str(_root / "quantumCode"))
+sys.path.append(str(_root / "fock_backend"))
 
 torch.set_default_dtype(torch.float64)
 

@@ -1,6 +1,6 @@
 misc:
   random_seed: 0
-  folder_tag: "Q"                             # Additional folder name tag (can leave blank)
+  folder_tag: "Test"                             # Additional folder name tag (can leave blank)
   scan_id: null
   scan_index: null
   scan_keys: null
@@ -12,8 +12,8 @@ circuit:
   bs_substrate_type: "trainable_ring"          # Options: trainable_ + (ring, star, chain, alltoall, int)
   lg_substrate_type: drs                       # Options: null, d, s, r...one letter max of each, any order, any combination
   layers: 1                                   # Layers of BS substrate + local gate
-  layer_structure: ["bs","lg","bs"] # CAREFUL UNSUP VS SUP! Options: bs, lg, cx
-  reupload: False                             # ONLY USED IF SUPERVISED - whether layers include data encoding
+  layer_structure: ["bs","lg"] # CAREFUL UNSUP VS SUP! Options: bs, lg, cx
+  reupload: True                             # ONLY USED IF SUPERVISED - whether layers include data encoding
   trash_modes: [1,2,3]                        # Adjusted to fit 4 wires
 
 training:
@@ -25,7 +25,7 @@ training:
   val_every: 2                                # Validate every X epochs
   lr_scheduling: True 
   batch_size: 16                              # Reduced batch size for sequential QNode looping
-  paradigm: "unsupervised"                    # Unsupervised has one trainable encoding parameter, supervised has four (and can also data-reupload)
+  paradigm: "supervised"                    # Unsupervised has one trainable encoding parameter, supervised has four (and can also data-reupload)
   opt_weight_decay: 0.0                       # Optimiser weight decay
   loss_fn: "F"                                # Options: F (+BCE), logF (+BCEWLL), logF/n (+BCEWLL) - loss_func (+supervised additional function)
   shuffle_particles: False
