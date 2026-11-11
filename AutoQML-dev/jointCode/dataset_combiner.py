@@ -10,14 +10,14 @@ import numpy as np
 from pathlib import Path
 
 INPUT_PATHS = [
-    "/vols/cms/bmaier/flat_val/TTBar_/TTBar__flat_pt_sample.h5",
-    "/vols/cms/bmaier/flat_test/TTBar_/TTBar__flat_pt_sample.h5",
-    "/vols/cms/bmaier/flat_train/TTBar_/TTBar__flat_pt_sample.h5",
-    "/vols/cms/bmaier/flat_val/ZJetsToNuNu/ZJetsToNuNu_flat_pt_sample.h5",
-    "/vols/cms/bmaier/flat_test/ZJetsToNuNu/ZJetsToNuNu_flat_pt_sample.h5",
-    "/vols/cms/bmaier/flat_train/ZJetsToNuNu/ZJetsToNuNu_flat_pt_sample.h5",
+    "/rds/general/user/av523/home/projects/myproject/data/flat_val/TTBar_/TTBar__flat_pt_sample.h5",
+    "/rds/general/user/av523/home/projects/myproject/data/flat_test/TTBar_/TTBar__flat_pt_sample.h5",
+    "/rds/general/user/av523/home/projects/myproject/data/flat_train/TTBar_/TTBar__flat_pt_sample.h5",
+    "/rds/general/user/av523/home/projects/myproject/data/flat_val/ZJetsToNuNu/ZJetsToNuNu_flat_pt_sample.h5",
+    "//rds/general/user/av523/home/projects/myproject/data/flat_test/ZJetsToNuNu/ZJetsToNuNu_flat_pt_sample.h5",
+    "/rds/general/user/av523/home/projects/myproject/data/flat_train/ZJetsToNuNu/ZJetsToNuNu_flat_pt_sample.h5",
 ]
-OUTPUT_PATH = "/vols/cms/lgc124/QMLoutputs/TTBar_+ZJetsToNuNU_flat_merged.h5"
+OUTPUT_PATH = "/rds/general/user/av523/home/projects/myproject/data/QMLoutputs/TTBar_+ZJetsToNuNU_flat_merged.h5"
 
 # Datasets to concatenate along axis 0 (one entry per jet)
 CONCAT_DATASETS = ["truth_labels", "jetConstituentsList"]

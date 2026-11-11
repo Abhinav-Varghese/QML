@@ -36,7 +36,7 @@ class TTBarZJetsData:
 
     def __init__(self, cfg):
         self.cfg = cfg
-        dataset_path = os.path.join("/vols/cms/lgc124/QMLoutputs/TTBar_+ZJetsToNuNU_flat_merged.h5")
+        dataset_path = os.path.join("/rds/general/user/av523/home/projects/myproject/data/QMLoutputs/TTBar_+ZJetsToNuNU_flat_merged.h5")
         self.const, self.truth, self.jet_pt = self.load_data(dataset_path)
 
         self._filter_low_multiplicity_jets()
