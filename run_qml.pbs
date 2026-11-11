@@ -25,4 +25,4 @@ printf 'Python: '; which python
 python --version
 
 # Run your script
-python jointCode/dataset_combiner.py
+python fock_backend/q_main.py

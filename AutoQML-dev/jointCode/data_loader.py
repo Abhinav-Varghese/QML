@@ -342,7 +342,7 @@ class TTBarZJetsData:
 
         # Normalise over fixed pool, independent of no.train requested
         X_tr = self.normalisation(G(tr_idx))
-        X_vl = self.normalisation(G(vl_idx)
+        X_vl = self.normalisation(G(vl_idx))
         X_te = self.normalisation(G(te_idx))
 
         y_tr = torch.from_numpy((self.truth[tr_idx] == self.truth.max()).astype(np.int64))
