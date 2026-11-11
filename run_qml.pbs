@@ -1,0 +1,28 @@
+#!/bin/bash
+#PBS -N qml_job
+#PBS -l select=1:ncpus=4:mem=16gb
+#PBS -l walltime=02:00:00
+#PBS -j oe
+
+set -euo pipefail
+
+# Start in the directory from which qsub was submitted
+cd "$PBS_O_WORKDIR"
+
+# Load the same Python module used to create the virtual environment
+module load tools/dev
+module load Python/3.11.5-GCCcore-13.2.0
+
+# Activate the virtual environment
+source "$HOME/venvs/quantum/bin/activate"
+
+# Move to the project directory
+cd "$HOME/QML/QML-latest/AutoQML-dev"
+
+# Print useful diagnostic information
+printf 'Host: '; hostname
+printf 'Python: '; which python
+python --version
+
+# Run your script
+python jointCode/dataset_combiner.py
